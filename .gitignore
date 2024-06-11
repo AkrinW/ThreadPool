@@ -1,0 +1,10 @@
+# 忽略 .vscode 文件夹及其内容
+/.vscode/
+/html/
+/test.exe
+/CMakeLists.txt
+/build/
+/hello.exe
+*.exe
+/test.cpp
+test.cpp
