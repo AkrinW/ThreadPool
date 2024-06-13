@@ -36,16 +36,16 @@ ThreadPool::ThreadPool(int num): stop(false) {
                     //创建一个互斥锁，锁定类内的队列锁。
                     std::unique_lock<std::mutex> lock(this->queueMutex);
                     //类内的condition
-                    this->condition.wait(lock, [this] {
+                    this->condition.wait(lock, [this]() {
                         return this->stop || !this->tasks.empty();                    
-                    });
+                    });//默认false阻塞，当stop为true或者任务非空时才能运行
                     if (this->stop && this->tasks.empty()) {
                         return;
-                    }
+                    }//检查线程池是否停止且任务为空，是的话线程就返回，终止
                     task = std::move(this->tasks.front());
-                    this->tasks.pop();
+                    this->tasks.pop();//移动线程任务。
                 }
-                task();
+                task();//执行线程。
             }
         });
     }
@@ -55,7 +55,7 @@ ThreadPool::~ThreadPool() {
     {
         std::unique_lock<std::mutex> lock(queueMutex);
         stop = true;
-    }
+    }//占用互斥锁，并且发送停止信号。
     condition.notify_all();
     for (std::thread &worker: workers) {
         worker.join();
@@ -73,19 +73,22 @@ ThreadPool::~ThreadPool() {
 template<class F, class ...Args> 
 auto ThreadPool::enqueue(F &&f, Args &&...args)
 ->std::future<typename std::result_of<F(Args...)>::type> {
+    // 线程的要执行的函数返回类型。
+    using returnType = typename std::result_of<F(Args...)>::type;
     //将绑定的函数和参数包装成 std::packaged_task，以便异步执行。
     auto task = std::make_shared<std::packaged_task<returnType()>>(
         std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-    );
+    );//完美转发。右值引用内容
     std::future<returnType> res = task->get_future();
     {
         std::unique_lock<std::mutex> lock(queueMutex);
         if (stop) {
             throw std::runtime_error("enqueue on stopped ThreadPool");
         }
+        // tasks.emplace(task);
         //将任务添加到任务队列中，并通知一个等待中的线程去执行该任务。
         tasks.emplace([task]() {
-            (*task)();
+            (*task)();//这个lambda表达式嵌套的意义何在呢？
         });
     }
     condition.notify_one();

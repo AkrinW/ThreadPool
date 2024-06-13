@@ -28,13 +28,22 @@ bool ready = false;//判断条件
     // 为什么要用unique_lock?和unique_ptr一样，它保证只有一个指针指向锁。从而实现锁的独占机制，保证了线程的安全性。
     // condition中的函数要求对mutex独占。
 
+bool ifready() {
+    return ready;
+}
+
 void PrintID(int id) {
     std::unique_lock<std::mutex> lock(mutex);//构造指针
-    while (!ready) {
-        std::cout << "before wait" << id << '\n';
-        condition.wait(lock);//不满足条件就等待。
-        std::cout << "after wait" << id << '\n';
-    }
+    // while (!ready) {
+    //     std::cout << "before wait" << id << '\n';
+    //     condition.wait(lock);//不满足条件就等待。
+    //     std::cout << "after wait" << id << '\n';
+    // }
+    //另一种写法，尝试添加把ready条件写入wait()函数里。
+    std::cout << "before wait" << id << '\n';
+    auto f = ifready;
+    condition.wait(lock, f);//false就阻塞，true就继续运行。
+    std::cout << "after wait" << id << '\n';
     std::cout << "isready" << id << '\n';
 }
 
