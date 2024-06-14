@@ -49,7 +49,7 @@ void Philosopher::dining() {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             ++eatcount;
             std::cout << "Philosopher" << id << "end eating\n";
-        }
+        }//作用域结束后会释放锁，比较关键。
     }
     std::cout << "Philospher" << id << "eat5times\n";
 }

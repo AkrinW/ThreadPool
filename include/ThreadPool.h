@@ -94,7 +94,5 @@ auto ThreadPool::enqueue(F &&f, Args &&...args)
     condition.notify_one();
     return res;
 }
-//chatgpt的代码无法通过编译。
-//先学习lambda表达式。连代码都看不明白。
 
 #endif
