@@ -1,9 +1,12 @@
 #include <thread>
 #include <iostream>
 #include <vector>
+#include <queue>
 #include "ThreadPool.h"
 #include "Philosopher.h"
 #include "Banker.h"
+#include "Producer.h"
+
 
 // int main() {
 //     // 线程池基础应用。
@@ -46,96 +49,125 @@
 
 // }
 
-void processTask(int id, Banker* banker, std::vector<int> request, std::vector<int> release) {
-    bool flag = true;
-    while (flag) {
-        std::cout << id << ' ';
-        {
-            if (banker->RequestResources(id, request)) {
-                std::cout << "Process " << id << " granted resources.\n";
-                std::this_thread::sleep_for(std::chrono::seconds(1));  // 模拟资源使用
-                banker->ReleaseResources(id, release);
-                std::cout << "Process " << id << " released resources.\n";
-                flag = false;
-                // std::this_thread::sleep_for(std::chrono::seconds(id));
-            } else {
-                std::cout << "Process " << id << " denied resources.\n";
-                std::this_thread::sleep_for(std::chrono::seconds(id+1));
-                // 请求失败需要等待一段时间，不然会一直占用请求。
-                // id有可能为0，所以需要加常数
-            }
-        }
-    }
-}
+// void processTask(int id, Banker* banker, std::vector<int> request, std::vector<int> release) {
+//     bool flag = true;
+//     while (flag) {
+//         std::cout << id << ' ';
+//         {
+//             if (banker->RequestResources(id, request)) {
+//                 std::cout << "Process " << id << " granted resources.\n";
+//                 std::this_thread::sleep_for(std::chrono::seconds(1));  // 模拟资源使用
+//                 banker->ReleaseResources(id, release);
+//                 std::cout << "Process " << id << " released resources.\n";
+//                 flag = false;
+//                 // std::this_thread::sleep_for(std::chrono::seconds(id));
+//             } else {
+//                 std::cout << "Process " << id << " denied resources.\n";
+//                 std::this_thread::sleep_for(std::chrono::seconds(id+1));
+//                 // 请求失败需要等待一段时间，不然会一直占用请求。
+//                 // id有可能为0，所以需要加常数
+//             }
+//         }
+//     }
+// }
+
+// int main() {
+//     int numProcesses = 5;
+//     int numResources = 3;
+
+//     std::vector<int> available = {10, 5, 7};
+//     std::vector<std::vector<int>> max = {
+//         {7, 5, 3},
+//         {3, 2, 2},
+//         {9, 0, 2},
+//         {2, 2, 2},
+//         {4, 3, 3}
+//     };
+//     std::vector<std::vector<int>> allocation = {
+//         {0, 1, 0},
+//         {2, 0, 0},
+//         {3, 0, 2},
+//         {2, 1, 1},
+//         {0, 0, 2}
+//     };
+
+//     Banker *bank = new Banker(numProcesses, numResources, available, max, allocation);
+//     ThreadPool pool(numProcesses);
+
+//     std::vector<std::vector<int>> requests = {
+//         {7, 4, 3},
+//         {1, 2, 2},
+//         {6, 0, 0},
+//         {0, 1, 1},
+//         {4, 3, 1}
+
+//         // {1, 0, 2},
+//         // {0, 2, 0},
+//         // {3, 0, 0},
+//         // {2, 1, 1},// 
+//         // {0, 0, 2} // 这两组请求超过need了，所以永远不会成功。
+
+//         // {0, 0, 0},// 分配大量资源，并且请求0资源，但是依然执行失败，说明是线程分配出现问题
+//         // {0, 0, 0},
+//         // {0, 0, 0},
+//         // {0, 0, 0},
+//         // {0, 0, 0}
+//     };
+
+//     std::vector<std::vector<int>> releases = {
+//         {7, 4, 3},
+//         {1, 2, 2},
+//         {6, 0, 0},
+//         {0, 1, 1},
+//         {4, 3, 1}
+//         // {1, 0, 2},
+//         // {0, 2, 0},
+//         // {3, 0, 0},
+//         // {2, 1, 1},
+//         // {0, 0, 2}
+//         // {0, 0, 0},
+//         // {0, 0, 0},
+//         // {0, 0, 0},
+//         // {0, 0, 0},
+//         // {0, 0, 0}
+//     };
+
+//     for (int i = 0; i < numProcesses; ++i) {
+//         pool.enqueue([=]() {
+//             processTask(i, bank, requests[i], releases[i]);
+//         });
+//     }
+
+//     std::this_thread::sleep_for(std::chrono::seconds(10));  // 让任务执行完毕
+//     return 0;
+// }
 
 int main() {
-    int numProcesses = 5;
-    int numResources = 3;
-
-    std::vector<int> available = {10, 5, 7};
-    std::vector<std::vector<int>> max = {
-        {7, 5, 3},
-        {3, 2, 2},
-        {9, 0, 2},
-        {2, 2, 2},
-        {4, 3, 3}
-    };
-    std::vector<std::vector<int>> allocation = {
-        {0, 1, 0},
-        {2, 0, 0},
-        {3, 0, 2},
-        {2, 1, 1},
-        {0, 0, 2}
-    };
-
-    Banker *bank = new Banker(numProcesses, numResources, available, max, allocation);
-    ThreadPool pool(numProcesses);
-
-    std::vector<std::vector<int>> requests = {
-        {7, 4, 3},
-        {1, 2, 2},
-        {6, 0, 0},
-        {0, 1, 1},
-        {4, 3, 1}
-
-        // {1, 0, 2},
-        // {0, 2, 0},
-        // {3, 0, 0},
-        // {2, 1, 1},// 
-        // {0, 0, 2} // 这两组请求超过need了，所以永远不会成功。
-
-        // {0, 0, 0},// 分配大量资源，并且请求0资源，但是依然执行失败，说明是线程分配出现问题
-        // {0, 0, 0},
-        // {0, 0, 0},
-        // {0, 0, 0},
-        // {0, 0, 0}
-    };
-
-    std::vector<std::vector<int>> releases = {
-        {7, 4, 3},
-        {1, 2, 2},
-        {6, 0, 0},
-        {0, 1, 1},
-        {4, 3, 1}
-        // {1, 0, 2},
-        // {0, 2, 0},
-        // {3, 0, 0},
-        // {2, 1, 1},
-        // {0, 0, 2}
-        // {0, 0, 0},
-        // {0, 0, 0},
-        // {0, 0, 0},
-        // {0, 0, 0},
-        // {0, 0, 0}
-    };
-
-    for (int i = 0; i < numProcesses; ++i) {
-        pool.enqueue([=]() {
-            processTask(i, bank, requests[i], releases[i]);
+    ThreadPool pool(5);
+    auto mtx = std::make_shared<std::mutex>();
+    std::condition_variable conditon;
+    int numProducer = 2;
+    int numConsumer = 3;
+    int numProitem = 15;
+    int numConitem = 10;
+    auto buffer = std::make_shared<std::queue<int>>();
+    int maxBufferSize = 10; 
+    // std::vector<Producer*> pro(numProducer);
+    // std::vector<Consumer*> con(numConsumer);
+    for (int i = 0; i < numProducer; ++i) {
+        // pro.push_back(new Producer(i, numProitem, buffer, maxBufferSize, mtx));
+        pool.enqueue([=, &conditon]() {// 混合值传递和引用传递。condition必须用引用。
+            Producer(i, numProitem, buffer, maxBufferSize, mtx, conditon).Produce();
         });
     }
-
-    std::this_thread::sleep_for(std::chrono::seconds(10));  // 让任务执行完毕
+    // 为什么这里需要分开引用和值呢？原因出在i上，需要把i用值引用，每个生产者的id都一样了。
+    for (int j = 0; j < numConsumer; ++j) {
+        // con.push_back(new Consumer(i, numConitem, buffer, maxBufferSize, mtx));
+        pool.enqueue([=, &mtx, &conditon]() {//mtx是指针，所以用不用引用都对。
+            Consumer(j, numConitem, buffer, maxBufferSize, mtx, conditon).Consume();
+        });
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(50));
     return 0;
 }
 
