@@ -9,6 +9,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <future>
+
+// 线程池类，创造多个线程等待调用，使用时，需要传入lambda表达式。
 class ThreadPool {
 private:
     std::vector<std::thread> workers;//工作的线程

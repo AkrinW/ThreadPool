@@ -4,6 +4,9 @@
 #include "ThreadPool.h"
 #include <memory>
 
+// 银行家问题考虑资源分配顺序的问题。
+// 当有多个线程同时请求资源时，为了避免资源不足而死锁，需要在每次分配时检查是否进入死锁。
+// 对于已经完成的线程，释放它已占据的资源。
 class Banker {
 private:
 int numProcess; //请求的进程个数

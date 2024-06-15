@@ -4,6 +4,8 @@
 #include "ThreadPool.h"
 #include <memory>
 
+// 哲学家问题需要处理抢占锁的问题。5个哲学家只有5把锁，一次进食需要调用两把锁。
+// 解决的思路是主动放弃，如果抢占不到2把锁，就把已有的锁全部释放。
 class Philosopher {
 private:
     int id;
