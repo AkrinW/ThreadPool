@@ -6,7 +6,7 @@
 #include "Philosopher.h"
 #include "Banker.h"
 #include "Producer.h"
-
+#include "Writer.h"
 
 // int main() {
 //     // 线程池基础应用。
@@ -49,6 +49,7 @@
 
 // }
 
+// 银行家问题
 // void processTask(int id, Banker* banker, std::vector<int> request, std::vector<int> release) {
 //     bool flag = true;
 //     while (flag) {
@@ -142,36 +143,58 @@
 //     return 0;
 // }
 
+// 生产者消费者问题
+// int main() {
+//     ThreadPool pool(5);
+//     auto mtx = std::make_shared<std::mutex>();
+//     std::condition_variable conditon;
+//     int numProducer = 2;
+//     int numConsumer = 3;
+//     int numProitem = 15;
+//     int numConitem = 10;
+//     auto buffer = std::make_shared<std::queue<int>>();
+//     int maxBufferSize = 10; 
+//     // std::vector<Producer*> pro(numProducer);
+//     // std::vector<Consumer*> con(numConsumer);
+//     for (int i = 0; i < numProducer; ++i) {
+//         // pro.push_back(new Producer(i, numProitem, buffer, maxBufferSize, mtx));
+//         pool.enqueue([=, &conditon]() {// 混合值传递和引用传递。condition必须用引用。
+//             Producer(i, numProitem, buffer, maxBufferSize, mtx, conditon).Produce();
+//         });
+//     }
+//     // 为什么这里需要分开引用和值呢？原因出在i上，需要把i用值引用，每个生产者的id都一样了。
+//     for (int j = 0; j < numConsumer; ++j) {
+//         // con.push_back(new Consumer(i, numConitem, buffer, maxBufferSize, mtx));
+//         pool.enqueue([=, &mtx, &conditon]() {//mtx是指针，所以用不用引用都对。
+//             Consumer(j, numConitem, buffer, maxBufferSize, mtx, conditon).Consume();
+//         });
+//     }
+//     std::this_thread::sleep_for(std::chrono::seconds(50));
+//     return 0;
+// }
+
+// 读者写者问题
 int main() {
-    ThreadPool pool(5);
+    ThreadPool pool(4);
     auto mtx = std::make_shared<std::mutex>();
-    std::condition_variable conditon;
-    int numProducer = 2;
-    int numConsumer = 3;
-    int numProitem = 15;
-    int numConitem = 10;
-    auto buffer = std::make_shared<std::queue<int>>();
-    int maxBufferSize = 10; 
-    // std::vector<Producer*> pro(numProducer);
-    // std::vector<Consumer*> con(numConsumer);
-    for (int i = 0; i < numProducer; ++i) {
-        // pro.push_back(new Producer(i, numProitem, buffer, maxBufferSize, mtx));
-        pool.enqueue([=, &conditon]() {// 混合值传递和引用传递。condition必须用引用。
-            Producer(i, numProitem, buffer, maxBufferSize, mtx, conditon).Produce();
+    // std::condition_variable conditon;
+    RWLock rwLock(mtx);
+    int numWriter = 2;
+    int numReader = 4;
+    auto label = std::make_shared<char>('\0');
+    for (int i = 0; i < numWriter; ++i) {
+        pool.enqueue([=, &rwLock]() {
+            Writer(i, label, rwLock).Write();
         });
     }
-    // 为什么这里需要分开引用和值呢？原因出在i上，需要把i用值引用，每个生产者的id都一样了。
-    for (int j = 0; j < numConsumer; ++j) {
-        // con.push_back(new Consumer(i, numConitem, buffer, maxBufferSize, mtx));
-        pool.enqueue([=, &mtx, &conditon]() {//mtx是指针，所以用不用引用都对。
-            Consumer(j, numConitem, buffer, maxBufferSize, mtx, conditon).Consume();
+    for (int j = 0; j < numReader; ++j) {
+        pool.enqueue([=, &rwLock]() {
+            Reader(j, label, rwLock).Read();
         });
     }
     std::this_thread::sleep_for(std::chrono::seconds(50));
     return 0;
 }
-
-
 // void do_some_work(int num) {
 //     std::cout << "thread: " << num << std::endl;
 // }
