@@ -79,15 +79,32 @@ bool Banker::isSafeState() {
     // all_of 判断范围内是否所有元素都满足条件。
     for (int i = 0; i < numProcess; ++i) {
         // 检查每个进程，是否剩余的资源数可以完成全部未进程。
-        if (!finish[i] && std::all_of(need[i].begin(), need[i].end(), [&work, i](int n) { 
-            return n <= work[i];//对于一个未完成的进程，看它是否能用剩余资源完成。
-        })) {//true, 可以完成，就把他的资源回收到work里
-            for (int j = 0; j < numProcess; ++j) {
-                work[j] += allocation[i][j];
+        if (!finish[i]) {
+            bool flag = true;
+            for (int j = 0; j < numResources; ++j) {
+                if (need[i][j] > work[j]) {
+                    flag = false;
+                    break;
+                }
             }
-            finish[i] = true;// 回收说明完成这个进程了。
-            i = -1; // 从头开始，检查其他的进程
+            if (flag) {
+                for (int j = 0; j < numResources; ++j) {
+                    work[j] += allocation[i][j];
+                }
+                finish[i] = true;
+                i = -1;
+            }
         }
+        // 执行错误的原因出现在这里，work[i]会数组越界，发生未定义问题，gpt的代码不可以全信。
+        // if (!finish[i] && std::all_of(need[i].begin(), need[i].end(), [&work, i](int n) { 
+        //     return n <= work[i];//对于一个未完成的进程，看它是否能用剩余资源完成。
+        // })) {//true, 可以完成，就把他的资源回收到work里
+        //     for (int j = 0; j < numProcess; ++j) {
+        //         work[j] += allocation[i][j];
+        //     }
+        //     finish[i] = true;// 回收说明完成这个进程了。
+        //     i = -1; // 从头开始，检查其他的进程
+        // }
     }
 
     return std::all_of(finish.begin(), finish.end(), [](bool f) { 
